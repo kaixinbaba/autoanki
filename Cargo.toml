@@ -6,3 +6,17 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+# Basic
+anyhow = "1"
+thiserror = "1"
+crossbeam-channel = "0.5"
+lazy_static = "1.4.0"
+
+# CLI
+clap = "4.1.4"
+
+# HTML parser
+nipper = "0.1.9"
+
+# HTTP client
+reqwest = "0.11.14"
