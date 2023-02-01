@@ -13,7 +13,7 @@ crossbeam-channel = "0.5"
 lazy_static = "1.4.0"
 
 # CLI
-clap = "4.1.4"
+clap = {version = "4.1.4", features = ["derive"]}
 
 # HTML parser
 nipper = "0.1.9"
