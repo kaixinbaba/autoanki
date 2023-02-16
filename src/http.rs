@@ -113,11 +113,6 @@ impl From<PartOfSpeech> for String {
     }
 }
 
-// impl Default for PartOfSpeech {
-//     fn default() -> Self {
-//         Adjectives
-//     }
-// }
 
 /// Try to save given word in Anki.
 ///

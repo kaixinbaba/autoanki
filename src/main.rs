@@ -16,6 +16,7 @@ use anyhow::Result;
 use futures::future::join_all;
 use tokio::task;
 use clipboard::{ClipboardProvider, ClipboardContext};
+use colored::Colorize;
 use tokio::time::sleep;
 
 use cli::parse_args;
@@ -34,7 +35,7 @@ async fn main() -> Result<()> {
     for word in words {
         handlers.push(task::spawn(async move {
             http::save_word(word.clone()).await.expect(&format!("Saving word {} occurred an exception.", &word));
-            println!("√ [{}] saved.", word);
+            println!("> {} saved. {}", word.green(), "√".green().bold());
         }));
     }
 
