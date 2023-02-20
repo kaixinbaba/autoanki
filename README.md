@@ -9,6 +9,7 @@ see **[CHANGELOG](./doc/CHANGELOG.md)**
 - [x] Support username(email) and password in configuration.
 - [ ] Fix the hard code for these cookie, token, mid and deck.
 - [ ] Add subcommand for CLI, like: query,list,save etc.
+- [ ] Give tips when the word doesn't exist.
 - [ ] Support more customer flash card style.
 - [ ] If part of speech different, maybe the pronunciation is different.
 - [ ] Could just copy the style(with tags) into fields

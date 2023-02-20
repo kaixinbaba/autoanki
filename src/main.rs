@@ -24,7 +24,7 @@ use cli::parse_args;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let (config, args) = parse_args()?;
+    let (config, mut args) = parse_args()?;
     let words = if args.words.is_empty() {
         vec![get_clipboard_text().await]
     } else {
@@ -34,8 +34,11 @@ async fn main() -> Result<()> {
 
     for word in words {
         handlers.push(task::spawn(async move {
-            http::save_word(word.clone()).await.expect(&format!("Saving word {} occurred an exception.", &word));
-            println!("> {} saved. {}", word.green(), "√".green().bold());
+            if let Err(e) = http::save_word(word.clone()).await {
+                println!("[{}] {} detail: {}", "X".red(), word.red(), e.to_string());
+            } else {
+                println!("[{}] {}", "√".green(), word.green());
+            }
         }));
     }
 

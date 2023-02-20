@@ -5,7 +5,7 @@
 use std::collections::HashMap;
 use std::fmt::format;
 
-use anyhow::{Context, Result};
+use anyhow::{anyhow, bail, Context, Result};
 use cookie::Cookie;
 use nipper::Document;
 use once_cell::sync::Lazy;
@@ -81,17 +81,19 @@ pub(crate) enum PartOfSpeech {
 
 }
 
-impl From<String> for PartOfSpeech {
-    fn from(value: String) -> Self {
+impl TryFrom<String> for PartOfSpeech {
+    type Error = anyhow::Error;
+
+    fn try_from(value: String) -> std::result::Result<Self, Self::Error> {
         match value.trim() {
-            "noun" => Nouns,
-            "adjective" => Adjectives,
-            "verb" => Verb,
-            "adverb" => Adverb,
-            "number" => Numerals,
-            "conjunction" => Conjunction,
-            "preposition" => Preposition,
-            _ => panic!("Illegal value '{}'", value)
+            "noun" => Ok(Nouns),
+            "adjective" => Ok(Adjectives),
+            "verb" => Ok(Verb),
+            "adverb" => Ok(Adverb),
+            "number" => Ok(Numerals),
+            "conjunction" => Ok(Conjunction),
+            "preposition" => Ok(Preposition),
+            _ => bail!("Illegal value '{}'", value)
         }
     }
 }
@@ -177,15 +179,18 @@ async fn save(lm: LongMan) -> Result<()> {
         .form(&params)
         .send()
         .await?;
-
-    Ok(())
+    if resp.status().is_success() {
+        Ok(())
+    } else {
+        bail!(resp.text().await?)
+    }
 }
 
 fn build_params(data: String) -> HashMap<String, String> {
     let mut params = HashMap::new();
     params.insert("nid".to_string(), "".to_string());
     params.insert("data".to_string(), data);
-    params.insert("csrf_token".to_string(), "eyJvcCI6ICJlZGl0IiwgImlhdCI6IDE2NzY0NzIzNDYsICJ1aWQiOiAiMjMxM2RiYjMifQ.biXQR69IMV3BQQtgO6U8QAPti1g6txsrLsyY8XiXJwg".to_string());
+    params.insert("csrf_token".to_string(), "eyJvcCI6ICJlZGl0IiwgImlhdCI6IDE2NzY4OTcwODYsICJ1aWQiOiAiMjMxM2RiYjMifQ.m-3dXu7pTAW-zPL8nf7AAcHmkNTvd35Vt60yUWdVEN0".to_string());
     params.insert("mid".to_string(), "1674395347344".to_string());
     params.insert("deck".to_string(), "1674395027912".to_string());
     params
@@ -194,7 +199,7 @@ fn build_params(data: String) -> HashMap<String, String> {
 fn build_cookie() -> String {
     let mut cookies = HashMap::new();
     // eyJrIjogImpVZFpSMnFHMW9yZnZpT0wiLCAiYyI6IDIsICJ0IjogMTY3NjQ3MDg5Mn0.IfV3frGBX3d0bz2PVH-AM32xqQekdCcTE-5Y0mykXbc
-    cookies.insert("ankiweb", "eyJrIjogImpVZFpSMnFHMW9yZnZpT0wiLCAiYyI6IDIsICJ0IjogMTY3NjQ3MDg5Mn0.IfV3frGBX3d0bz2PVH-AM32xqQekdCcTE-5Y0mykXbc");
+    cookies.insert("ankiweb", "eyJrIjogImpVZFpSMnFHMW9yZnZpT0wiLCAiYyI6IDIsICJ0IjogMTY3Njg5Njc2MH0.Tb8CPoywrfNK6UQGv4rOwYfD8sxLrgPRZZTT_ofnUwo");
     let mut cookie_jar = cookie::CookieJar::new();
     for (key, value) in cookies {
         let cookie = Cookie::new(key.to_string(), value.to_string());
@@ -244,11 +249,12 @@ fn parse(word: String, document: Document) -> LongMan {
     let details: Vec<WordDetail> = dictionary
         .select(".dictentry")
         .iter()
-        .map(|content| {
+        .filter_map(|content| {
             let phonetic_symbol = content.select(".PronCodes").text().to_string();
 
             let pos = content.select(".POS").first().text().to_string();
-            let part_of_speech = PartOfSpeech::from(pos);
+
+            let part_of_speech = PartOfSpeech::try_from(pos).ok()?;
 
             let explanations: Vec<ExplanationDetail> = content
                 .select(".Sense")
@@ -299,11 +305,11 @@ fn parse(word: String, document: Document) -> LongMan {
                     })
                 }).collect();
 
-            WordDetail {
+            Some(WordDetail {
                 phonetic_symbol,
                 part_of_speech,
                 explanations,
-            }
+            })
         }).collect();
 
     LongMan {
